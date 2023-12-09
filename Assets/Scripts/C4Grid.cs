@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class C4Grid : MonoBehaviour
@@ -11,7 +12,7 @@ public class C4Grid : MonoBehaviour
     private float startX;
     private float startY;
     private int[,] cellInfo; // 0 for no player, 1 for p1, 2 for p2
-    [SerializeField] private GameObject cellFrame;
+    [SerializeField] private GameObject cellPrefab; // gameobject of a single cell
     
     //public getters
     public float StartX { get { return startX; } private set { startX = value; } }
@@ -19,8 +20,9 @@ public class C4Grid : MonoBehaviour
     public int[,] CellInfo { get { return cellInfo; } private set { cellInfo = value; } }
     
     [Header("Object Pooling")]
-    private List<GameObject> pooledCellFrames = new List<GameObject>();
-    private int amountToPool = 15 * 14; //max width and height
+    private Queue<GameObject> pooledCells = new Queue<GameObject>();
+    private Queue<GameObject> activeCells = new Queue<GameObject>();
+    private int amountToPool = 42;
     
     //Scripts
     [SerializeField]private TokenGen tokenGenScript;
@@ -31,12 +33,12 @@ public class C4Grid : MonoBehaviour
     {
         for (int i = 0; i < amountToPool; i++)
         {
-            GameObject obj = Instantiate(cellFrame, Vector3.zero, Quaternion.identity, transform);
-            obj.SetActive(false);
-            pooledCellFrames.Add(obj);
+            GameObject cellClone = Instantiate(cellPrefab, Vector3.zero, Quaternion.identity, transform);
+            cellClone.SetActive(false);
+            pooledCells.Enqueue(cellClone);
         }
     }
-    
+
     //--------------------------------------GRID BEHAVIOUR-----------------------------------
     
     #region Grid Behaviour
@@ -62,7 +64,7 @@ public class C4Grid : MonoBehaviour
             {
                 cellInfo[x, y] = 0;
                 
-                //get a cell frame
+                //get a cell object
                 ReturnPooledObject().transform.position = new Vector3(startX + x, startY + y);
             }
         }
@@ -81,7 +83,7 @@ public class C4Grid : MonoBehaviour
         {
             if (cellInfo[xPos, yPos] == 0)
             {
-                GameObject newToken = tokenGenScript.InstantiateToken(xPos, yPos);
+                GameObject newToken = tokenGenScript.ActivateToken(xPos, yPos);
                 cellInfo[xPos, yPos] = GameManager.instance.PlayerID;
                 GameManager.instance.GridTokenObjects.Add((xPos, yPos), newToken);
 
@@ -97,29 +99,36 @@ public class C4Grid : MonoBehaviour
     #region Pooled Objects
 
     /// <summary>
-    /// Returns an inactive cell frame object
+    /// Returns the first inactive cell object and turns it to active
     /// </summary>
     private GameObject ReturnPooledObject()
     {
-        for (int i = 0; i < pooledCellFrames.Count; i++)
+        if (pooledCells.Count == 0)
         {
-            if (!pooledCellFrames[i].activeSelf)
+            for (int i = 0; i < amountToPool; i++)
             {
-                pooledCellFrames[i].SetActive(true);
-                return pooledCellFrames[i];
+                GameObject cellClone = Instantiate(cellPrefab, Vector3.zero, Quaternion.identity, transform);
+                cellClone.SetActive(false);
+                pooledCells.Enqueue(cellClone);
             }
         }
-        return null;
+        GameObject newCell = pooledCells.Dequeue();
+        activeCells.Enqueue(newCell);
+        newCell.SetActive(true);
+        return newCell;
     }
     
     /// <summary>
-    /// Deactivate all cell frames
+    /// Deactivate all cells
     /// </summary>
     public void DeactivateAllCells()
     {
-        for (int i = 0; i < pooledCellFrames.Count; i++)
+        List<GameObject> activatedCells = activeCells.ToList();
+        foreach (var cel in activatedCells)
         {
-            pooledCellFrames[i].SetActive(false);
+            cel.SetActive(false);
+            pooledCells.Enqueue(cel);
+            activeCells.Dequeue();
         }
     }
     

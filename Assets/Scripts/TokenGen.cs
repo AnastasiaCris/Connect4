@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class TokenGen : MonoBehaviour
@@ -12,10 +13,11 @@ public class TokenGen : MonoBehaviour
     [SerializeField] private AudioSource tokenSound;
     [SerializeField] private AudioClip dropSound;
     [SerializeField] private AudioClip winningTokenSound;
-    private GameObject tokenGhost;
+    [SerializeField] private GameObject tokenGhost;
 
     [Header("Object Pooling")]
-    private List<GameObject> pooledTokens = new List<GameObject>();
+    private Queue<GameObject> pooledTokens = new Queue<GameObject>();
+    private Queue<GameObject> activeTokens = new Queue<GameObject>();
     private int amountToPool = 42;
     
     [Header("Scripts")]
@@ -30,7 +32,7 @@ public class TokenGen : MonoBehaviour
         {
             GameObject obj = Instantiate(tokenObj, Vector3.zero, Quaternion.identity, transform);
             obj.SetActive(false);
-            pooledTokens.Add(obj);
+            pooledTokens.Enqueue(obj);
         }
     }
 
@@ -41,10 +43,9 @@ public class TokenGen : MonoBehaviour
     /// <summary>
     /// Token ghost will visualize to the player where the token will spawn (from the top of the board)
     /// </summary>
-    public IEnumerator CreateTokenGhost()
+    public IEnumerator ActivateTokenGhost()
     { 
         yield return new WaitUntil(() => GameManager.instance.IsWithinGridBounds());
-       tokenGhost = ReturnPooledObject();
        tokenGhost.SetActive(true);
 
        VisualizeTokenGhost();
@@ -90,7 +91,7 @@ public class TokenGen : MonoBehaviour
     /// <param name="xPos"> the desired x position </param>
     /// <param name="yPos"> the desired y position </param>
     /// <returns></returns>
-    public GameObject InstantiateToken(int xPos, int yPos)
+    public GameObject ActivateToken(int xPos, int yPos)
     {
         GameObject tokenObjClone = ReturnPooledObject();
         tokenObjClone.transform.position = new Vector2(c4GridScript.StartX + xPos, c4GridScript.StartY + C4Grid.Height);
@@ -155,7 +156,6 @@ public class TokenGen : MonoBehaviour
         }
         
         //The end of the drop
-
         GameManager.instance.TokenLanded(xPos, yPos);
     }
 
@@ -178,36 +178,50 @@ public class TokenGen : MonoBehaviour
     /// </summary>
     private GameObject ReturnPooledObject()
     {
-        for (int i = 0; i < pooledTokens.Count; i++)
+        if (pooledTokens.Count == 0)
         {
-            if (!pooledTokens[i].activeSelf)
+            for (int i = 0; i < amountToPool; i++)
             {
-                return pooledTokens[i];
+                GameObject tokenClone = Instantiate(tokenObj, Vector3.zero, Quaternion.identity, transform);
+                tokenClone.SetActive(false);
+                pooledTokens.Enqueue(tokenClone);
             }
         }
-        return null;
+        GameObject newCell = pooledTokens.Dequeue();
+        activeTokens.Enqueue(newCell);
+        newCell.SetActive(true);
+        return newCell;
     }
+    
+    /// <summary>
+    /// Return a list of all active tokens
+    /// </summary>
+    /// <returns></returns>
 
     public List<GameObject> ReturnListOfPlacedTokens()
     {
         List<GameObject> placedTokens = new List<GameObject>();
 
-        for (int i = 1; i < pooledTokens.Count; i++)
-        {
-            if (pooledTokens[i].activeSelf)
-            {
-                placedTokens.Add(pooledTokens[i]);
-            }
-        }
+        placedTokens = activeTokens.ToList();
 
         return placedTokens;
     }
+    
+    /// <summary>
+    /// Deactivates all active tokens
+    /// </summary>
     public void DeactivateAllTokens()
     {
-        for (int i = 0; i < pooledTokens.Count; i++)
+        List<GameObject> activatedTokens = activeTokens.ToList();
+        
+        foreach (var token in activatedTokens)
         {
-            pooledTokens[i].SetActive(false);
+            token.SetActive(false);
+            pooledTokens.Enqueue(token);
+            activeTokens.Dequeue();
         }
+        
+        tokenGhost.SetActive(false);
     }
     
     #endregion

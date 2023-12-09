@@ -76,7 +76,7 @@ public class GameManager : MonoBehaviour
         //make possible to drop tokens 
         yield return new WaitForSeconds(0.5f);
         canDropToken = true;
-        StartCoroutine(tokenGenScript.CreateTokenGhost());
+        StartCoroutine(tokenGenScript.ActivateTokenGhost());
         
         //reset sound
         UIManager.instance.ResetSounds();
@@ -105,7 +105,6 @@ public class GameManager : MonoBehaviour
             {
                 canDropToken = false;
                 c4GridScript.UpdateGridInfo(mousePosX);
-
             }
         }
     }
@@ -189,12 +188,15 @@ public class GameManager : MonoBehaviour
     //--------------------------------------WIN CONDITION-------------------------------------
 
     #region Win Condition
+    
     /// <summary>
     /// Animates the winning tokens and at the end of the animation handles win
     /// </summary>
     /// <param name="winPos"> The pos in the grid of the winning tokens </param>
     private IEnumerator VisualizeWinningTokens(List<(int,int)> winPos)
     {
+        WaitForSeconds wait = new WaitForSeconds(0.1f);
+        
         Color plCol = Color.white;
 
         float pitchSound = 0.8f;
@@ -208,16 +210,16 @@ public class GameManager : MonoBehaviour
                 pitchSound += 0.1f;
                 
                 //Change color
-                tokenObject.GetComponent<SpriteRenderer>().color = UIManager.instance.winCol;
-                yield return new WaitForSeconds(0.1f);  
-                tokenObject.GetComponent<SpriteRenderer>().color = plCol;
-                yield return new WaitForSeconds(0.1f);  
-                tokenObject.GetComponent<SpriteRenderer>().color = UIManager.instance.winCol;
-                yield return new WaitForSeconds(0.1f);  
-                tokenObject.GetComponent<SpriteRenderer>().color = plCol;
-                yield return new WaitForSeconds(0.1f);  
-                tokenObject.GetComponent<SpriteRenderer>().color = UIManager.instance.winCol;
-                
+                SpriteRenderer tokenSprite = tokenObject.GetComponent<SpriteRenderer>();
+                tokenSprite.color = UIManager.instance.winCol;
+                yield return wait;  
+                tokenSprite.color = plCol;
+                yield return wait;  
+                tokenSprite.color = UIManager.instance.winCol;
+                yield return wait;  
+                tokenSprite.color = plCol;
+                yield return wait;  
+                tokenSprite.color = UIManager.instance.winCol;
             }
         }
         
