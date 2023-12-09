@@ -22,6 +22,9 @@ public class C4Grid : MonoBehaviour
     private List<GameObject> pooledCellFrames = new List<GameObject>();
     private int amountToPool = 15 * 14; //max width and height
     
+    //Scripts
+    [SerializeField]private TokenGen tokenGenScript;
+
     #endregion
 
     private void Awake()
@@ -36,6 +39,7 @@ public class C4Grid : MonoBehaviour
     
     //--------------------------------------GRID BEHAVIOUR-----------------------------------
     
+    #region Grid Behaviour
 
     /// <summary>
     /// Creates the grid and starting board of the game
@@ -77,7 +81,7 @@ public class C4Grid : MonoBehaviour
         {
             if (cellInfo[xPos, yPos] == 0)
             {
-                GameObject newToken = TokenGen.instance.InstantiateToken(xPos, yPos);
+                GameObject newToken = tokenGenScript.InstantiateToken(xPos, yPos);
                 cellInfo[xPos, yPos] = GameManager.instance.PlayerID;
                 GameManager.instance.GridTokenObjects.Add((xPos, yPos), newToken);
 
@@ -86,9 +90,12 @@ public class C4Grid : MonoBehaviour
         }
     }
     
-    //--------------------------------------POOLED CELL FRAMES-----------------------------------
-
+    #endregion
     
+    //--------------------------------------POOLED CELLS-----------------------------------
+
+    #region Pooled Objects
+
     /// <summary>
     /// Returns an inactive cell frame object
     /// </summary>
@@ -115,4 +122,6 @@ public class C4Grid : MonoBehaviour
             pooledCellFrames[i].SetActive(false);
         }
     }
+    
+    #endregion
 }

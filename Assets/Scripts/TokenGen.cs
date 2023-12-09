@@ -20,16 +20,12 @@ public class TokenGen : MonoBehaviour
     
     [Header("Scripts")]
     [SerializeField]private C4Grid c4GridScript;
-    public static TokenGen instance;
     
     #endregion
 
 
     private void Awake()
     {
-        if (instance == null) instance = this;
-        
-        
         for (int i = 0; i < amountToPool; i++)
         {
             GameObject obj = Instantiate(tokenObj, Vector3.zero, Quaternion.identity, transform);
@@ -39,13 +35,15 @@ public class TokenGen : MonoBehaviour
     }
 
     //--------------------------------------TOKEN GHOST BEHAVIOUR-----------------------------------
+    
+    #region Token Ghost Behaviour
 
     /// <summary>
     /// Token ghost will visualize to the player where the token will spawn (from the top of the board)
     /// </summary>
     public IEnumerator CreateTokenGhost()
     { 
-        yield return new WaitUntil(() => GameManager.instance.IsWithinBounds());
+        yield return new WaitUntil(() => GameManager.instance.IsWithinGridBounds());
        tokenGhost = ReturnPooledObject();
        tokenGhost.SetActive(true);
 
@@ -55,8 +53,9 @@ public class TokenGen : MonoBehaviour
     /// <summary>
     /// Visualize the show token to match the current player
     /// </summary>
-    private void VisualizeTokenGhost()
+    public void VisualizeTokenGhost()
     {
+        tokenGhost.SetActive(true);
         Animator tokenAnim = tokenGhost.GetComponent<Animator>();
         tokenAnim.SetInteger("id", GameManager.instance.PlayerID);
         SpriteRenderer tokenSprite = tokenGhost.GetComponent<SpriteRenderer>();
@@ -79,7 +78,11 @@ public class TokenGen : MonoBehaviour
             tokenGhost.transform.position = desiredPos;
     }
     
+    #endregion
+    
     //--------------------------------------TOKEN BEHAVIOUR-----------------------------------
+    
+    #region Token Behaviour
 
     /// <summary>
     /// Pools a token out and makes the drop in the desired position
@@ -151,29 +154,12 @@ public class TokenGen : MonoBehaviour
             }
         }
         
-        //Checking for a win condition / changing player turn
-        if (GameManager.instance.CheckWinCondition(GameManager.instance.PlayerID, xPos, yPos))
-        {
-            yield return new WaitForSeconds(2.5f);  
-            GameManager.instance.HandleWin(GameManager.instance.PlayerID);
-        }
-        else if (GameManager.instance.BoardFull())//check if the board is full (draw)
-        {
-            yield return new WaitForSeconds(2.5f);  
-            StartCoroutine(GameManager.instance.HandleDraw());
-        }
-        else
-        {
-            GameManager.instance.ChangePlayerTurn();
-            
-            tokenGhost.SetActive(true);
-            VisualizeTokenGhost();//change appearance of the token ghost
-        }
-        
-        
+        //The end of the drop
+
+        GameManager.instance.TokenLanded(xPos, yPos);
     }
 
-    public void PlayWinningTokensSound(float pitch)
+    public void PlayEndGameTokensSound(float pitch)
     {
         tokenSound.pitch = pitch;
         tokenSound.volume = 0.15f;
@@ -181,8 +167,12 @@ public class TokenGen : MonoBehaviour
         tokenSound.Play();
     }
     
+    #endregion
+    
     //--------------------------------------POOLED TOKENS-----------------------------------
     
+    #region Pooled Objects
+
     /// <summary>
     /// Returns an inactive token object
     /// </summary>
@@ -198,6 +188,20 @@ public class TokenGen : MonoBehaviour
         return null;
     }
 
+    public List<GameObject> ReturnListOfPlacedTokens()
+    {
+        List<GameObject> placedTokens = new List<GameObject>();
+
+        for (int i = 1; i < pooledTokens.Count; i++)
+        {
+            if (pooledTokens[i].activeSelf)
+            {
+                placedTokens.Add(pooledTokens[i]);
+            }
+        }
+
+        return placedTokens;
+    }
     public void DeactivateAllTokens()
     {
         for (int i = 0; i < pooledTokens.Count; i++)
@@ -205,4 +209,6 @@ public class TokenGen : MonoBehaviour
             pooledTokens[i].SetActive(false);
         }
     }
+    
+    #endregion
 }
