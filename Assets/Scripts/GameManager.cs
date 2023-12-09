@@ -79,7 +79,7 @@ public class GameManager : MonoBehaviour
         StartCoroutine(tokenGenScript.ActivateTokenGhost());
         
         //reset sound
-        UIManager.instance.ResetSounds();
+        UIManager.instance.ResetBckgSound();
     }
     #endregion
     

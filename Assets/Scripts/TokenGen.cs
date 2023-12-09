@@ -133,7 +133,7 @@ public class TokenGen : MonoBehaviour
         }
 
         tokenSound.clip = dropSound;
-        tokenSound.volume = 0.5f;
+        tokenSound.volume = 0.3f;
         
         //make the drop
         for (int i = 0; i < freeSpaces.Count; i++)

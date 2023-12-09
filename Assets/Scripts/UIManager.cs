@@ -79,6 +79,16 @@ public class UIManager : MonoBehaviour
     }
     
     /// <summary>
+    /// resets the background music
+    /// </summary>
+    public void ResetBckgSound()
+    {
+        bckgSoundSource.clip = backgroundMusic;
+        bckgSoundSource.loop = true;
+        bckgSoundSource.Play();
+    }
+    
+    /// <summary>
     /// played whenever hovering over a button
     /// </summary>
     public void PlayButtonSound()
@@ -197,21 +207,4 @@ public class UIManager : MonoBehaviour
     
     #endregion
     
-    //---------------------------------BUTTONS--------------------------------
-
-    #region Buttons
-
-    public void QuitGame()
-    {
-        Application.Quit();
-    }
-
-    public void ResetSounds()
-    {
-        bckgSoundSource.clip = backgroundMusic;
-        bckgSoundSource.loop = true;
-        bckgSoundSource.Play();
-    }
-    
-    #endregion
 }
